@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Temple Run Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: black;
+      overflow: hidden;
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      perspective: 800px;
+      overflow: hidden;
+    }
+    .track {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 300px;
+      height: 1000px;
+      transform-origin: top;
+      transform: rotateX(60deg) translate(-50%, -50%);
+      background: linear-gradient(#333, #111);
+      overflow: hidden;
+    }
+    .lane {
+      position: absolute;
+      width: 100px;
+      height: 1000px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .lane:nth-child(1) { left: 0; }
+    .lane:nth-child(2) { left: 100px; }
+    .lane:nth-child(3) { left: 200px; }
+    .player {
+      position: absolute;
+      bottom: 20px;
+      width: 40px;
+      height: 60px;
+      background-color: yellow;
+      border-radius: 5px;
+      left: 130px;
+    }
+    .obstacle {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background-color: red;
+      top: -60px;
+    }
+    .score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="track">
+      <div class="lane"></div>
+      <div class="lane"></div>
+      <div class="lane"></div>
+    </div>
+    <div class="player" id="player"></div>
+    <div class="score" id="score">Score: 0</div>
+  </div>
+
+  <script>
+    const gameContainer = document.getElementById('game-container');
+    const player = document.getElementById('player');
+    const scoreElement = document.getElementById('score');
+
+    const trackWidth = 300;
+    const laneWidth = 100;
+    const playerWidth = 40;
+    const obstacleSize = 60;
+    let currentLane = 1; // 0 = left, 1 = center, 2 = right
+    let score = 0;
+    let gameOver = false;
+
+    // Obstacle management
+    const obstacles = [];
+    const speed = 5; // Speed of obstacles
+    const spawnInterval = 1500; // Time between obstacle spawns
+
+    function spawnObstacle() {
+      const lane = Math.floor(Math.random() * 3);
+      const obstacle = document.createElement('div');
+      obstacle.className = 'obstacle';
+      obstacle.style.left = `${lane * laneWidth + (laneWidth - obstacleSize) / 2}px`;
+      gameContainer.appendChild(obstacle);
+      obstacles.push({ element: obstacle, lane });
+    }
+
+    function moveObstacles() {
+      obstacles.forEach((ob, index) => {
+        const rect = ob.element.getBoundingClientRect();
+        ob.element.style.top = `${rect.top + speed}px`;
+
+        // Collision detection
+        if (
+          ob.lane === currentLane &&
+          rect.top + obstacleSize > gameContainer.offsetHeight - 80 &&
+          rect.top < gameContainer.offsetHeight - 20
+        ) {
+          endGame();
+        }
+
+        // Remove obstacles that are out of bounds
+        if (rect.top > gameContainer.offsetHeight) {
+          ob.element.remove();
+          obstacles.splice(index, 1);
+          if (!gameOver) score++; // Increment score for successfully avoiding the obstacle
+        }
+      });
+    }
+
+    function endGame() {
+      gameOver = true;
+      alert(`Game Over! Final Score: ${score}`);
+      location.reload();
+    }
+
+    // Game loop
+    function gameLoop() {
+      if (!gameOver) {
+        moveObstacles();
+        scoreElement.textContent = `Score: ${score}`;
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    // Player movement
+    window.addEventListener('keydown', (e) => {
+      if (gameOver) return;
+
+      if (e.key === 'ArrowLeft' && currentLane > 0) {
+        currentLane--;
+        player.style.left = `${currentLane * laneWidth + (laneWidth - playerWidth) / 2}px`;
+      } else if (e.key === 'ArrowRight' && currentLane < 2) {
+        currentLane++;
+        player.style.left = `${currentLane * laneWidth + (laneWidth - playerWidth) / 2}px`;
+      }
+    });
+
+    // Spawn obstacles at intervals
+    setInterval(() => {
+      if (!gameOver) spawnObstacle();
+    }, spawnInterval);
+
+    // Start the game
+    gameLoop();
+  </script>
+</body>
+</html>
+
